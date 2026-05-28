@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stable Audio 3</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- header with tool nav -->
+    <header class="header">
+      <div class="header-logo">
+        <div class="logo-dot"></div>
+        Stable Audio 3
+      </div>
+      <nav class="tool-nav" role="navigation">
+        <button class="tool-btn active" data-tool="generate">Generate</button>
+        <button class="tool-btn" data-tool="variations">Variations</button>
+      </nav>
+      <select class="model-select" id="model-select" title="sm-music: fast music on CPU. sm-sfx: sound effects. medium: higher quality, needs more RAM.">
+        <option value="sm-music|same-s">sm-music</option>
+        <option value="sm-sfx|same-s">sm-sfx</option>
+        <option value="medium|same-l">medium</option>
+      </select>
+    </header>
+
+    <!-- ── TOOL: GENERATE ─────────────────────────────────────── -->
+    <div id="tool-generate">
+
+      <!-- mode tabs -->
+      <div class="mode-tabs" role="tablist">
+        <button class="mode-tab active" role="tab" data-mode="text">Text to audio</button>
+        <button class="mode-tab" role="tab" data-mode="restyle">Restyle</button>
+        <button class="mode-tab" role="tab" data-mode="inpaint">Inpaint</button>
+      </div>
+
+      <!-- prompt -->
+      <div class="prompt-wrap">
+        <textarea id="prompt" placeholder="Describe the sound you want…" rows="3" autocomplete="off" spellcheck="false"></textarea>
+      </div>
+
+      <!-- parameter controls -->
+      <div class="controls-grid">
+        <div class="control-row">
+          <span class="control-label">Duration <span class="tip" data-tooltip="How long the generated audio will be. sm-music/sfx tops out at 120s; medium can go up to 380s.">ⓘ</span></span>
+          <div class="range-row">
+            <input type="range" id="duration" min="1" max="120" value="30" step="1" />
+            <span class="control-value" id="duration-val">30s</span>
+          </div>
+        </div>
+        <div class="control-row">
+          <span class="control-label">Steps <span class="tip" data-tooltip="Diffusion steps. 8 is the sweet spot — more steps add quality but slow generation. 1 is fastest.">ⓘ</span></span>
+          <div class="range-row">
+            <input type="range" id="steps" min="1" max="16" value="8" step="1" />
+            <span class="control-value" id="steps-val">8</span>
+          </div>
+        </div>
+        <div class="control-row">
+          <span class="control-label">CFG <span class="tip" data-tooltip="Prompt guidance strength. 1.0 = off (most creative). Higher values follow your prompt more literally.">ⓘ</span></span>
+          <div class="range-row">
+            <input type="range" id="cfg" min="1" max="8" value="1" step="0.1" />
+            <span class="control-value" id="cfg-val">1.0</span>
+          </div>
+        </div>
+        <div class="control-row">
+          <span class="control-label">Seed <span class="tip" data-tooltip="Locks the random starting point so you get the same result twice. Leave blank for a new result each time.">ⓘ</span></span>
+          <input type="number" id="seed" placeholder="random" min="0" />
+        </div>
+      </div>
+
+      <!-- negative prompt (shown when cfg > 1) -->
+      <div class="form-section" id="neg-prompt-row" style="display:none; margin-bottom:20px;">
+        <div class="control-label" style="margin-bottom:6px;">Negative prompt <span class="tip" data-tooltip="Describe what you want to avoid in the output. Only active when CFG is above 1.0.">ⓘ</span></div>
+        <input type="text" id="negative-prompt" placeholder="e.g. drums, vocals, distortion" />
+      </div>
+
+      <!-- audio controls (restyle / inpaint) -->
+      <div class="audio-controls" id="audio-controls">
+        <div class="audio-controls-title" id="audio-controls-title">Source audio</div>
+        <div class="upload-zone" id="upload-zone">
+          <input type="file" id="audio-file" accept="audio/wav,audio/*" />
+          <div class="upload-icon">🎵</div>
+          <div class="upload-prompt">
+            <div class="upload-label"><strong>Choose a WAV file</strong></div>
+            <div class="upload-label" style="font-size:11px; margin-top:2px;">or drag and drop</div>
+          </div>
+          <div class="upload-filename" id="upload-filename"></div>
+        </div>
+        <!-- restyle: noise level -->
+        <div id="restyle-controls">
+          <div class="control-row">
+            <span class="control-label">Noise level <span class="tip" data-tooltip="How much the source audio is transformed. ~0.4 = subtle variation, ~0.9 = heavily reinterpreted.">ⓘ</span></span>
+            <div class="range-row">
+              <input type="range" id="noise-level" min="0.1" max="1.5" value="0.7" step="0.05" />
+              <span class="control-value" id="noise-level-val">0.70</span>
+            </div>
+          </div>
+        </div>
+        <!-- inpaint: start / end seconds -->
+        <div class="inpaint-range" id="inpaint-range">
+          <div class="control-row">
+            <span class="control-label">Start (s) <span class="tip" data-tooltip="Where the regenerated region begins, in seconds.">ⓘ</span></span>
+            <input type="number" id="inpaint-start" min="0" value="4" step="0.5" />
+          </div>
+          <div class="control-row">
+            <span class="control-label">End (s) <span class="tip" data-tooltip="Where the regenerated region ends. Everything outside start→end stays unchanged.">ⓘ</span></span>
+            <input type="number" id="inpaint-end" min="0" value="8" step="0.5" />
+          </div>
+        </div>
+      </div>
+
+      <!-- generate button -->
+      <button class="btn-generate" id="btn-generate">
+        <div class="spinner"></div>
+        <span class="btn-label"></span>
+      </button>
+
+      <!-- progress -->
+      <div class="progress-section" id="progress-section">
+        <div class="progress-title">Generating</div>
+        <div class="stage-list" id="stage-list"></div>
+      </div>
+
+      <!-- result player -->
+      <div class="result-section" id="result-section">
+        <div class="result-meta">
+          <div>
+            <div class="result-prompt" id="result-prompt"></div>
+            <div class="result-stats" id="result-stats"></div>
+          </div>
+          <div class="result-actions">
+            <a class="btn-icon" id="btn-download" title="Download WAV" download>⬇</a>
+          </div>
+        </div>
+        <div id="waveform"></div>
+        <div class="player-controls">
+          <button class="btn-play" id="btn-play" title="Play / Pause">▶</button>
+          <span class="player-time" id="player-time">0:00 / 0:00</span>
+        </div>
+      </div>
+
+      <!-- history -->
+      <div class="history-section" id="history-section">
+        <div class="history-title">Recent generations</div>
+        <div class="history-list" id="history-list"></div>
+      </div>
+
+    </div><!-- /#tool-generate -->
+
+    <!-- ── TOOL: VARIATIONS ───────────────────────────────────── -->
+    <div id="tool-variations" style="display:none">
+
+      <!-- source upload -->
+      <div class="var-upload-zone" id="var-upload-zone">
+        <input type="file" id="var-audio-file" accept="audio/wav,audio/*" />
+        <div class="var-upload-idle" id="var-upload-idle">
+          <div class="upload-icon">🎵</div>
+          <div class="upload-label"><strong>Drop a WAV here</strong> or click to browse</div>
+        </div>
+        <div class="var-upload-ready" id="var-upload-ready" style="display:none">
+          <div class="var-source-name" id="var-source-name"></div>
+          <div id="var-source-waveform"></div>
+          <div class="variation-player" style="margin-top:10px">
+            <button class="btn-play" id="var-source-play" style="width:28px;height:28px;font-size:11px" title="Play / Pause">▶</button>
+            <span class="player-time" id="var-source-time">0:00 / 0:00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- style hint -->
+      <div class="var-style-row">
+        <input type="text" id="var-style" placeholder="Style hint (optional) — e.g. lo-fi, jazz, cinematic" autocomplete="off" spellcheck="false" />
+      </div>
+
+      <!-- controls row: BPM · Knob · Key -->
+      <div class="var-controls-row">
+        <div class="var-bpm-block">
+          <input type="number" id="var-bpm" placeholder="120" min="40" max="300" />
+          <div class="var-control-label">BPM</div>
+        </div>
+
+        <div class="var-knob-block">
+          <div class="knob" id="knob-complexity" data-value="40">
+            <div class="knob-body">
+              <div class="knob-indicator"></div>
+            </div>
+          </div>
+          <div class="var-control-label">COMPLEXITY</div>
+          <div class="knob-value" id="knob-value">40</div>
+        </div>
+
+        <div class="var-key-block">
+          <select id="var-key" class="model-select" style="width:100%">
+            <option value="none">No key</option>
+            <optgroup label="Major">
+              <option value="C major">C major</option>
+              <option value="C# major">C# major</option>
+              <option value="D major">D major</option>
+              <option value="D# major">D# major</option>
+              <option value="E major">E major</option>
+              <option value="F major">F major</option>
+              <option value="F# major">F# major</option>
+              <option value="G major">G major</option>
+              <option value="G# major">G# major</option>
+              <option value="A major">A major</option>
+              <option value="A# major">A# major</option>
+              <option value="B major">B major</option>
+            </optgroup>
+            <optgroup label="Minor">
+              <option value="C minor">C minor</option>
+              <option value="C# minor">C# minor</option>
+              <option value="D minor">D minor</option>
+              <option value="D# minor">D# minor</option>
+              <option value="E minor">E minor</option>
+              <option value="F minor">F minor</option>
+              <option value="F# minor">F# minor</option>
+              <option value="G minor" selected>G minor</option>
+              <option value="G# minor">G# minor</option>
+              <option value="A minor">A minor</option>
+              <option value="A# minor">A# minor</option>
+              <option value="B minor">B minor</option>
+            </optgroup>
+          </select>
+          <div class="var-control-label">KEY</div>
+        </div>
+      </div>
+
+      <!-- create / cancel buttons -->
+      <div class="var-button-row">
+        <button class="btn-generate" id="btn-create-variations" disabled>
+          <div class="spinner"></div>
+          <span class="btn-label">Upload a file to begin</span>
+        </button>
+        <button class="btn-cancel" id="btn-cancel-variations" style="display:none">Cancel</button>
+      </div>
+
+      <!-- variation cards -->
+      <div class="variation-list" id="variation-list"></div>
+
+    </div><!-- /#tool-variations -->
+
+  </div><!-- /.app -->
+
+  <!-- wavesurfer CDN -->
+  <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

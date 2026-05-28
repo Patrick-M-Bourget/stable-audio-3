@@ -2,3 +2,6 @@ mlx>=0.30
 numpy>=1.24
 sentencepiece>=0.2
 huggingface_hub>=0.20
+fastapi>=0.115
+uvicorn[standard]>=0.34
+python-multipart>=0.0.20
