@@ -624,8 +624,15 @@ function bindKnob() {
 }
 
 // ── create variations ─────────────────────────────────────────────────────────
+function updateNegHint() {
+  const style = $("var-style").value.trim();
+  const neg = deriveNegPrompt(style);
+  $("var-neg-hint").textContent = neg ? `Excluding: ${neg}` : "";
+}
+
 function bindCreateVariations() {
   $("btn-create-variations").addEventListener("click", startVariations);
+  $("var-style").addEventListener("input", updateNegHint);
 }
 
 function buildVariationPrompt() {

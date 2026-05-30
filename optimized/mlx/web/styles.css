@@ -695,6 +695,15 @@ input[type="number"]::-webkit-inner-spin-button { opacity: 0.4; }
 .var-style-row input::placeholder { color: var(--muted); }
 .var-style-row input:focus { outline: none; border-color: var(--primary); }
 
+.var-neg-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 5px;
+  min-height: 14px;
+  transition: opacity 0.2s;
+}
+.var-neg-hint:empty { opacity: 0; }
+
 /* controls row */
 .var-controls-row {
   display: flex;
