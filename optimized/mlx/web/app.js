@@ -19,6 +19,40 @@ let varActiveStreams = []; // EventSource refs for cancel
 
 // ── prompt harness ────────────────────────────────────────────────────────────
 
+// Maps instrument keywords → reinforcing phrases added to the positive prompt.
+const INSTRUMENT_POS = {
+  piano:     ["solo piano", "piano only", "piano melody"],
+  keys:      ["keys only", "keyboard melody"],
+  keyboard:  ["keys only", "keyboard melody"],
+  guitar:    ["guitar only", "guitar melody"],
+  strings:   ["strings only", "orchestral strings"],
+  violin:    ["solo violin", "violin melody"],
+  cello:     ["solo cello", "cello melody"],
+  viola:     ["solo viola"],
+  synth:     ["synth only", "synthesizer lead"],
+  pad:       ["atmospheric pad", "ambient texture"],
+  flute:     ["solo flute", "flute melody"],
+  oboe:      ["solo oboe"],
+  trumpet:   ["solo trumpet"],
+  saxophone: ["solo saxophone"],
+  sax:       ["solo saxophone"],
+  choir:     ["choral", "choir voices"],
+  vocals:    ["vocals only", "a cappella"],
+  voice:     ["vocals only", "a cappella"],
+  drums:     ["drum loop", "percussion only"],
+  percussion:["percussion loop", "drums only"],
+};
+
+// Returns reinforcement phrases for any instrument keywords found in `style`.
+function derivePosPhrases(style) {
+  const lower = style.toLowerCase();
+  const phrases = [];
+  for (const [keyword, terms] of Object.entries(INSTRUMENT_POS)) {
+    if (lower.includes(keyword)) phrases.push(...terms);
+  }
+  return phrases;
+}
+
 // Maps instrument keywords → terms to suppress in the negative prompt.
 // Melodic instruments exclude percussive bleed; drums exclude melodic bleed.
 const INSTRUMENT_NEG = {
@@ -598,7 +632,8 @@ function buildVariationPrompt() {
   const style = $("var-style").value.trim();
   const bpm = $("var-bpm").value.trim();
   const key = $("var-key").value;
-  const parts = [style || "music sample"];
+  const reinforcements = derivePosPhrases(style);
+  const parts = [style || "music sample", ...reinforcements];
   if (bpm) parts.push(`${bpm} BPM`);
   if (key !== "none") parts.push(`in ${key}`);
   return parts.join(", ");
