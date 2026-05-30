@@ -17,6 +17,45 @@ const varWavesurfers = []; // one per variation card
 let varActiveJobIds = [];  // for cancel
 let varActiveStreams = []; // EventSource refs for cancel
 
+// ── prompt harness ────────────────────────────────────────────────────────────
+
+// Maps instrument keywords → terms to suppress in the negative prompt.
+// Melodic instruments exclude percussive bleed; drums exclude melodic bleed.
+const INSTRUMENT_NEG = {
+  piano:     ["drums", "drum kit", "percussion", "beats", "kick", "snare", "hi-hat"],
+  keys:      ["drums", "drum kit", "percussion", "beats"],
+  keyboard:  ["drums", "drum kit", "percussion", "beats"],
+  guitar:    ["drums", "drum kit", "percussion", "beats"],
+  strings:   ["drums", "percussion", "electric guitar"],
+  violin:    ["drums", "percussion"],
+  cello:     ["drums", "percussion"],
+  viola:     ["drums", "percussion"],
+  synth:     ["drums", "percussion", "beats"],
+  pad:       ["drums", "percussion", "beats", "rhythm"],
+  flute:     ["drums", "percussion"],
+  oboe:      ["drums", "percussion"],
+  trumpet:   ["drums", "percussion"],
+  saxophone: ["drums", "percussion"],
+  sax:       ["drums", "percussion"],
+  choir:     ["drums", "percussion"],
+  vocals:    ["drums", "percussion"],
+  voice:     ["drums", "percussion"],
+  drums:     ["melody", "lead", "vocals"],
+  percussion:["melody", "lead", "vocals"],
+};
+
+// Returns a negative prompt string derived from instrument keywords in `style`,
+// or null if nothing matched. Respects explicit user overrides by returning null
+// when the user has already typed a negative prompt.
+function deriveNegPrompt(style) {
+  const lower = style.toLowerCase();
+  const exclusions = new Set();
+  for (const [keyword, terms] of Object.entries(INSTRUMENT_NEG)) {
+    if (lower.includes(keyword)) terms.forEach((t) => exclusions.add(t));
+  }
+  return exclusions.size ? [...exclusions].join(", ") : null;
+}
+
 // ── init ──────────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
   bindToolNav();
@@ -577,8 +616,13 @@ async function startVariations() {
   varWavesurfers.length = 0;
 
   const [dit, decoder] = $("model-select").value.split("|");
-  const noiseLevel = 0.15 + (varKnobValue / 100) * 1.25;
+  const t = varKnobValue / 100;
+  const noiseLevel = 0.15 + t * 0.65;          // 0.15 → 0.80
+  const steps = Math.round(4 + t * 16);         // 4 → 20
+  const cfg = 1.0 + t * 2.5;                    // 1.0 → 3.5
   const prompt = buildVariationPrompt();
+  const style = $("var-style").value.trim();
+  const negPrompt = deriveNegPrompt(style);
   const seconds = varSourceDuration ? Math.max(1, Math.round(varSourceDuration * 10) / 10) : 30;
 
   // build 4 variation cards (loading state)
@@ -601,9 +645,10 @@ async function startVariations() {
         dit,
         decoder,
         seconds,
-        steps: 4,   // lower steps for faster variation generation
-        cfg: 1.0,
+        steps,
+        cfg,
         seed,
+        negative_prompt: negPrompt,
         path_token: varPathToken,
         init_noise_level: noiseLevel,
       }),
