@@ -1,0 +1,110 @@
+model: small-music        # swap to: small-sfx, medium
+seed: -1                  # -1 = random (unique output every run) — used for sections 2 & 3
+comparison_seed: 42       # fixed seed used ONLY for step comparison in section 1 (isolates the steps variable)
+
+# Generation (Section 1)
+# Each prompt is generated at all 3 step levels so you can compare quality vs speed
+generate_steps_levels: [8, 30, 40, 50]   # 8=fast, 30=good, 40=better, 50=best (slowest)
+generate_cfg: 1.0                     # keep at 1.0 for post-trained models
+
+# Variation (Section 2)
+variation_steps: 8
+variation_cfg: 1.0
+variation_noise_levels: [0.3, 0.6, 0.9]
+
+# Extension / Continuation (Section 3)
+# Full grid: 2 durations × 2 step levels × 3 cfg levels = 12 files per sample
+extension_add_seconds: [5, 15]          # seconds added to original duration
+extension_steps_levels: [30, 50]        # 30=good, 50=best quality
+extension_cfg_levels: [1.0, 3.0, 7.0]  # 1.0=loop-like, 3.0=balanced, 7.0=strongly evolved
+max_duration: 120                       # model cap for small models (seconds)
+
+samples_dir: ../LANDR-SAMPLES
+output_dir: ./results
+
+# --- Section 1: Generate from Scratch ---
+# Two types of prompts to compare:
+#   technical_ = precise producer-style prompts (BPM, key, instrument names)
+#   human_     = natural language, how a non-technical user would describe what they want
+generate_prompts:
+
+  # — Technical prompts —
+  - label: "technical_lofi"
+    prompt: "Lo-fi hip hop beat, vinyl crackle, mellow piano, 90 BPM"
+    duration: 30
+
+  - label: "technical_ambient_guitar"
+    prompt: "Ambient guitar loop, hall reverb, dreamy atmosphere, 100 BPM, D major"
+    duration: 30
+
+  - label: "technical_drum_loop"
+    prompt: "Electronic drum loop, punchy kick, experimental, halftime feel, 136 BPM"
+    duration: 15
+
+  - label: "technical_synth_bass"
+    prompt: "Synth bass loop, Juno-style, warm and growly, minor key, 125 BPM"
+    duration: 15
+
+  - label: "technical_cello"
+    prompt: "Cello ensemble, cinematic, emotional, slow and lush strings"
+    duration: 30
+
+  # — Human / natural language prompts —
+  - label: "human_study_music"
+    prompt: "something chill to study to late at night"
+    duration: 30
+
+  - label: "human_sad_rainy_day"
+    prompt: "music that sounds like a sad rainy day looking out the window"
+    duration: 30
+
+  - label: "human_hype_workout"
+    prompt: "something really hype and energetic for working out"
+    duration: 15
+
+  - label: "human_summer_vibes"
+    prompt: "a beat that feels like summer at the beach with friends"
+    duration: 30
+
+  - label: "human_scary_game"
+    prompt: "creepy background music for a horror video game"
+    duration: 30
+
+  - label: "human_coffee_shop"
+    prompt: "the kind of music playing in a cool coffee shop on a Sunday morning"
+    duration: 30
+
+  - label: "human_epic_moment"
+    prompt: "music for an epic movie scene where the hero wins"
+    duration: 30
+
+  - label: "cello_ensemble"
+    prompt: "Cello ensemble, cinematic, emotional, slow and lush strings"
+    duration: 30
+
+# --- Section 2 & 3: Diverse prompt pool (unrelated to sample filenames) ---
+# One prompt per sample — rotated across all 23 files in alphabetical order
+prompt_pool:
+  - "Dark ambient drone, evolving textures, distant reverb, slow and atmospheric"
+  - "Upbeat reggaeton, catchy brass stabs, syncopated percussion, 100 BPM"
+  - "Neo-soul jazz, warm Rhodes electric piano, soft brushed drums, laid-back"
+  - "Aggressive trap beat, 808 sub bass, rolling hi-hats, 140 BPM"
+  - "Cinematic orchestral swell, French horns, sweeping strings, dramatic build"
+  - "Deep house groove, pulsing filtered bassline, soulful clap, 124 BPM"
+  - "Glitchy IDM, chopped micro-percussion, digital artifacts, unpredictable rhythm"
+  - "Brazilian bossa nova, nylon guitar, soft shaker, gentle bass, 130 BPM"
+  - "Psychedelic rock, heavily phased guitar, tremolo, swirling reverb"
+  - "Future bass, lush supersaws, emotional major chord progression, 150 BPM"
+  - "Classic soul, B3 organ stabs, funky rhythm guitar, tambourine, 98 BPM"
+  - "Minimal techno, driving four-on-the-floor kick, industrial metallic texture"
+  - "Smooth R&B, muted electric guitar licks, soft snare, late night groove"
+  - "Post-rock crescendo, guitar swells building from soft to powerful full band"
+  - "Afrobeats, syncopated talking drum, bright guitar chop, infectious groove"
+  - "Dreamy shoegaze, walls of reverb guitar, washed out and hazy, slow tempo"
+  - "80s synth-pop, arpeggiated analog lead, punchy gated snare, C major"
+  - "Jazz fusion, complex jazz chord voicings, electric bass, tight groove"
+  - "Nordic folk, fingerpicked acoustic guitar, airy flute melody, meditative"
+  - "Chillwave, tape-saturated lo-fi drums, warm detuned synthesizers, nostalgic"
+  - "Flamenco, passionate guitar rasgueado technique, hand claps, intense"
+  - "Grime, staccato dark synth stabs, half-time sub bass, cold atmosphere"
+  - "Salsa, bright brass section, congas, piano montuno, energetic 180 BPM"
